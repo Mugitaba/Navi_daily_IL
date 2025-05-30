@@ -4,8 +4,10 @@ import xmltodict
 import json
 import google.generativeai as genai
 from gtts import gTTS
-import datetime
+from datetime import datetime
 from flask import Flask
+
+
 
 
 YNET_URL = 'https://www.ynet.co.il/Integration/StoryRss1854.xml'
@@ -18,8 +20,9 @@ MAARIV_URL = 'https://www.maariv.co.il/Rss/RssFeedsMivzakiChadashot'
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-2.0-flash')
 
-today_date = str(datetime.date.today())
-audio_file_path = f"static/news{today_date}.mp3"
+now = datetime.now()
+today_date_time = now.strftime("%Y_%m_%d-%H")
+audio_file_path = f"static/news{today_date_time}.mp3"
 
 LLM_HEADERS = {
     "Content-Type": "application/json"
@@ -43,6 +46,7 @@ maariv = Source('Maariv', MAARIV_URL, False)
 
 sites_list = [ynet, walla, haaretz, nyt, maariv]
 full_headlines = {}
+
 for single_site in sites_list:
     full_headlines[single_site.name] = []
 
@@ -91,7 +95,7 @@ def index():
     return f'''
     <!DOCTYPE html>
         <html lang=en>
-            <h1>Today's news Summary{today_date}</h1>
+            <h1>Today's news Summary{today_date_time}</h1>
             <p>{essay}</p>
             <audio controls src="{audio_file_path}">
             </audio>
