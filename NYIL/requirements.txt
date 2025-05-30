@@ -1,0 +1,6 @@
+Flask
+requests
+xmltodict
+google-generativeai
+gTTS
+
