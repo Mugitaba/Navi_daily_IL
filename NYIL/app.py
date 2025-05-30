@@ -79,7 +79,8 @@ LLM_CONTENT = "You are a personal assistant assigned with giving a quick daily s
 
 response = model.generate_content(LLM_CONTENT)
 
-essay = response.text
+essay = response.text.replace('#', '').replace('*', '')
+html_essay = essay.replace('\n', '<br>')
 
 print(essay)
 
@@ -96,7 +97,7 @@ def index():
     <!DOCTYPE html>
         <html lang=en>
             <h1>Today's news Summary{today_date_time}</h1>
-            <p>{essay}</p>
+            <p>{html_essay}</p>
             <audio controls src="{audio_file_path}">
             </audio>
         </html>
