@@ -23,6 +23,7 @@ model = genai.GenerativeModel('gemini-2.0-flash')
 now = datetime.now()
 today_date_time = now.strftime("%Y_%m_%d-%H")
 audio_file_path = f"static/news{today_date_time}.mp3"
+text_file_path = f"static/news{today_date_time}.txt"
 
 LLM_HEADERS = {
     "Content-Type": "application/json"
@@ -69,40 +70,55 @@ def print_rss_reults(site):
         full_headlines[site.name].append(f'title: {item["title"]}\npublished:{item["pubDate"]}\nlink:{item["link"]}\n\n')
 
 
-for news_site in sites_list:
-    print_rss_reults(news_site)
-
-LLM_CONTENT = "You are a personal assistant assigned with giving a quick daily summary of the day's headlines in Israel."\
-              "Here are today's headlines and links. Please sum them all up to a one-pager cohesive narrative describing the day's events.\n"\
-              "*Impotant notes:** Write in the form od an essay, not in bullet points. Take the publication time into account. if there are any discrepancies between sources, mention which source says what"\
-              f"and how they contradict please.\n {json.dumps(full_headlines, ensure_ascii=False)}"
-
-response = model.generate_content(LLM_CONTENT)
-
-essay = response.text.replace('#', '').replace('*', '')
-html_essay = essay.replace('\n', '<br>')
-
-print(essay)
-
-if not os.path.exists(audio_file_path):
-    if not os.path.exists('static'):
-        os.makedirs(os.path.dirname(audio_file_path), exist_ok=True)
-    tts = gTTS(text=essay, lang='en')
-    tts.save(audio_file_path)
-
-
 @web_app.route('/')
 def index():
-    return f'''
-    <!DOCTYPE html>
-        <html lang=en>
-            <h1>Today's news Summary{today_date_time}</h1>
-            <p>{html_essay}</p>
-            <audio controls src="{audio_file_path}">
-            </audio>
-        </html>
+    if not os.path.exists(audio_file_path) or not os.path.exists(text_file_path):
+        if not os.path.exists('static'):
+            os.makedirs(os.path.dirname(audio_file_path), exist_ok=True)
+        for news_site in sites_list:
+            print_rss_reults(news_site)
 
-    '''
+        LLM_CONTENT = "You are a personal assistant assigned with giving a quick daily summary of the day's headlines in Israel."\
+                      "Here are today's headlines and links. Please sum them all up to a one-pager cohesive narrative describing the day's events.\n"\
+                      "*Impotant notes:** Write in the form od an essay, not in bullet points. Take the publication time into account. if there are any discrepancies between sources, mention which source says what"\
+                      f"and how they contradict please.\n {json.dumps(full_headlines, ensure_ascii=False)}"
+
+        response = model.generate_content(LLM_CONTENT)
+
+        essay = response.text.replace('#', '').replace('*', '')
+        html_essay = essay.replace('\n', '<br>')
+
+        with open(text_file_path, "w") as text_file:
+            text_file.write(essay)
+
+        tts = gTTS(text=essay, lang='en')
+        tts.save(audio_file_path)
+
+        return f'''
+        <!DOCTYPE html>
+            <html lang=en>
+                <h1>Today's news Summary{today_date_time}</h1>
+                <p>{html_essay}</p>
+                <audio controls src="{audio_file_path}">
+                </audio>
+            </html>
+    
+        '''
+    else:
+        with open(text_file_path, "r") as text_file:
+            essay = text_file.read().replace('#', '').replace('*', '')
+            html_essay = essay.replace('\n', '<br>')
+
+        return f'''
+        <!DOCTYPE html>
+            <html lang=en>
+                <h1>Today's news Summary{today_date_time}</h1>
+                <p>{html_essay}</p>
+                <audio controls src="{audio_file_path}">
+                </audio>
+            </html>
+
+        '''
 
 
 if __name__ == '__main__':
